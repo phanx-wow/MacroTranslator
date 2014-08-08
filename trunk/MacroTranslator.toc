@@ -1,0 +1,21 @@
+## Interface: 50400
+## Version: 5.4.8.2
+
+## Title: MacroTranslator
+## Notes: Translates the spell and item names in your macros when you switch game languages.
+## Notes-deDE: Übersetzt die Zaubers- und Gegenständesnamen in Ihrem Makros bei den Wechsel der Spielsprache.
+## Notes-esES: Traduce los nombres de hechizos y objetos en tus macros cuando se cambia el idioma del juego.
+## Notes-esMX: Traduce los nombres de hechizos y objetos en tus macros cuando se cambia el idioma del juego.
+
+## Author: Phanx
+## X-Email: addons@phanx.net
+## X-Copyright: Copyright (c) 2014 Phanx. All rights reserved.
+## X-License: See the accompanying LICENSE file for details.
+## X-CompatibleLocales: deDE, enUS, esES, esMX, frFR, itIT, ptBR, koKR, ruRU, zhCN, zhTW
+## X-Website: https://github.com/phanx/macro-translator
+## X-Curse-Project-Name: macrotranslator
+## X-WoWI-ID: 22721
+
+## SavedVariables: MacroTranslatorDB
+
+Addon.lua
