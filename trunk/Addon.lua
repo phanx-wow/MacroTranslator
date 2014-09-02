@@ -313,7 +313,7 @@ function f:PLAYER_LOGOUT()
 end
 
 hooksecurefunc("EditMacro", function(i)
-	if self.editing then return end
+	if f.editing then return end
 	--print("EditMacro", i)
 	if type(i) == "string" then
 		i = GetMacroIndexByName(i)
