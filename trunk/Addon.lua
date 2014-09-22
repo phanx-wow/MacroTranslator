@@ -13,6 +13,33 @@ MacroTranslator = Addon -- #DEBUG
 
 local isWOD = select(4, GetBuildInfo()) >= 60000
 
+local queue = {}
+
+local commands = {
+	"^#show",
+	"^#showtooltip",
+	"^"..SLASH_CAST1,
+	"^"..SLASH_CAST2,
+	"^"..SLASH_CAST3,
+	"^"..SLASH_CAST4,
+	"^"..SLASH_CASTRANDOM1,
+	"^"..SLASH_CASTRANDOM2,
+	"^"..SLASH_CASTSEQUENCE1,
+	"^"..SLASH_CASTSEQUENCE2,
+	"^"..SLASH_EQUIP1,
+	"^"..SLASH_EQUIP2,
+	"^"..SLASH_EQUIP3,
+	"^"..SLASH_EQUIP4,
+	"^"..SLASH_EQUIP_SET1,
+	"^"..SLASH_EQUIP_SET2,
+	"^"..SLASH_EQUIP_TO_SLOT1,
+	"^"..SLASH_EQUIP_TO_SLOT2,
+	"^"..SLASH_USE1,
+	"^"..SLASH_USE2,
+	"^"..SLASH_USERANDOM1,
+	"^"..SLASH_USERANDOM2,
+}
+
 ------------------------------------------------------------------------
 --	General utilities
 
@@ -31,7 +58,7 @@ end
 local spellbook = {}
 
 function Addon:ScanSpellbook()
-	--print("Collecting spell names...")
+	--print(">> |cffffc000ScanSpellbook|r")
 
 	local p1, p2, p3, p4, p5, p6 = GetProfessions()
 	local numTabs = max(p1 or 0, p2 or 0, p3 or 0, p4 or 0, p5 or 0, p6 or 0)
@@ -81,7 +108,7 @@ end
 --	Map spell names to IDs for the current locale at logout
 
 function Addon:FindSpell(name)
-	--print("FindSpell:", name)
+	--print(">> FindSpell:", name)
 	name = strlower(name)
 
 	if not next(spellbook) then
@@ -90,45 +117,56 @@ function Addon:FindSpell(name)
 
 	local link = spellbook[name]
 	if link then
-		--print("    ", spell, "=> spellbook")
+		--print(">> FindSpell:", "found:", link)
 		return link
 	else
-		--print("    ", spell, "=> no match")
+		--print(">> FindSpell:", "no match")
 		return
 	end
 end
 
 function Addon:SaveNameToID(name)
-	--print("SaveNameToID:", name)
-	--print("         checking name:", format("%q", name))
+	--print(">> SaveNameTo|r:", format("%q", name))
 	local link = GetSpellLink(name) or select(2, GetItemInfo(name)) or self:FindSpell(name)
 	if link then
 		local id = strmatch(link, "|H(.-:%d+)")
-		--print("found", id, link)
+		--print(">> SaveNameTo|r:", "found", id, link)
 		MacroTranslatorDB[strlower(name)] = id
 		return id
 	end
-	--print("no match")
-	--print("            no match for:", name)
+	--print(">> SaveNameTo|r:", "no match")
 end
 
 function Addon:SaveMacroText(body)
+	--print("   ")
+	--print(">> SaveMacroText:", body)
 	--body = self:CleanMacro(body)
 	for line in gmatch(body, "[^\n]+") do
-		--print("   processing line:", line)
-		local div = (strmatch(line, SLASH_CASTSEQUENCE1) or strmatch(line, SLASH_CASTSEQUENCE2)) and "[^,;]+" or "[^;]+"
-		for name in gmatch(line, div) do
-			--print("      processing part:", format("%q", name))
-			--name = strlower(name)
-			name = gsub(name, ".+%]", "")
-			name = gsub(name, "[#/]%S+", "")
-			name = gsub(name, "reset=%S+ ?", "")
-			name = strtrim(name)
-			if strlen(name) > 0 then
-				self:SaveNameToID(name)
-			else
-				--print("         skipping zero length")
+		--print(">> SaveMacroText:", "processing line:", line)
+		local ok
+		for i = 1, #commands do
+			if strmatch(line, commands[i]) then
+				ok = true
+				break
 			end
+		end
+		if ok then
+			local div = (strmatch(line, SLASH_CASTSEQUENCE1) or strmatch(line, SLASH_CASTSEQUENCE2)) and "[^,;]+" or "[^;]+"
+			for name in gmatch(line, div) do
+				--print(">> SaveMacroText:", "processing part:", format("%q", name))
+				--name = strlower(name)
+				name = gsub(name, ".+%]", "")
+				name = gsub(name, "[#/]%S+", "")
+				name = gsub(name, "reset=%S+ ?", "")
+				name = strtrim(name)
+				if strlen(name) > 0 then
+					self:SaveNameToID(name)
+				else
+					--print(">> SaveMacroText:", "skipping zero length part")
+				end
+			end
+		else
+			--print(">> SaveMacroText:", "skipping unsupported command")
 		end
 	end
 end
@@ -137,8 +175,8 @@ function Addon:SaveMacro(i) -- /run MacroTranslator:SaveMacro(50) /run MacroTran
 	if type(i) ~= "number" or i < 1 or i > 72 then return end
 	local macro, _, body = GetMacroInfo(i)
 	if not macro then return end
-	--print("    ")
-	--print("SaveMacro:", i, macro)
+	--print("   ")
+	--print(">> SaveMacro:", i, macro)
 	self:SaveMacroText(body)
 end
 
@@ -146,72 +184,100 @@ end
 
 function Addon:TranslateName(name)
 	name = strlower(name)
-	--print("TranslateName:", name)
+	--print(">> TranslateName:", name)
 	local data = MacroTranslatorDB[name]
 	if data then
-		--print("found data:", data)
-		local nameType, id, name = strsplit(":", data)
+		--print(">> TranslateName:", "found data", data)
+		local what, id, name = strsplit(":", data)
 		id = tonumber(id)
-		if nameType == "spell" then
+		if what == "spell" then
 			name = GetSpellInfo(id)
-		elseif nameType == "item" then
+		elseif what == "item" then
 			name = GetItemInfo(id)
 		end
 		if name then
 			MacroTranslatorDB[strlower(name)] = data
+			--print(">> TranslateName:", "saved data", name)
 			return name, id
 		end
 	end
-	--print("no match")
+	--print(">> TranslateName:", "no match")
 end
 
 function Addon:RestoreMacroText(body)
 	-- body = self:CleanMacro(body)
 	local newbody = body
-	--print("    ")
-	--print("RestoreMacroText:", i, macro)
+	local changes, missing = 0, 0
+	--print("   ")
+	--print(">> RestoreMacroText:", i, macro)
 	for line in gmatch(newbody, "[^\n]+") do
-		--print("   processing line:", line)
-		local div = (strmatch(line, SLASH_CASTSEQUENCE1) or strmatch(line, SLASH_CASTSEQUENCE2)) and "[^,;]+" or "[^;]+"
-		for name in gmatch(line, div) do
-			--print("      processing part:", format("%q", name))
-			name = gsub(name, ".+%]", "")
-			name = gsub(name, "[#/]%S+", "")
-			name = gsub(name, "[Rr][Ee][Ss][Ee][Tt]=%S+ ?", "")
-			name = strtrim(name)
-			local oldname = name -- after stripping extras, but before strlowering
-			if strlen(name) > 0 then
-				local newname = self:TranslateName(name)
-				if newname then
-					newbody = gsub(newbody, oldname, newname)
-					--print("         replaced", oldname, "=>", newname)
-				else
-					--print("         no match for", oldname)
-				end
+		--print(">> RestoreMacroText:", "processing line:", line)
+		local ok
+		for i = 1, #commands do
+			if strmatch(line, commands[i]) then
+				ok = true
+				break
 			end
 		end
+		if ok then
+			local div = (strmatch(line, SLASH_CASTSEQUENCE1) or strmatch(line, SLASH_CASTSEQUENCE2)) and "[^,;]+" or "[^;]+"
+			for name in gmatch(line, div) do
+				--print(">> RestoreMacroText:", "processing part:", format("%q", name))
+				name = gsub(name, ".+%]", "")
+				name = gsub(name, "[#/]%S+", "")
+				name = gsub(name, "[Rr][Ee][Ss][Ee][Tt]=%S+ ?", "")
+				name = strtrim(name)
+				if strlen(name) > 0 then
+					local newname = self:TranslateName(name)
+					if newname then
+						if newname == name then
+							--print(">> RestoreMacroText:", "no change for", name)
+						else
+							newbody = gsub(newbody, name, newname)
+							changes = changes + 1
+							--print(">> RestoreMacroText:", name, "=>", newname)
+						end
+					else
+						--print(">> RestoreMacroText:", "no match for", name)
+						missing = missing + 1
+					end
+				end
+			end
+		--else
+			--print(">> SaveMacroText:", "skipping unsupported command")
+		end
 	end
-	--print("new:", newbody)
-	if newbody ~= body then
-		return newbody
+	--print(">> RestoreMacroText:", changes, "changes")
+	if changes > 0 then
+		return newbody, missing
+	else
+		return nil, missing
 	end
 end
 
 function Addon:RestoreMacro(i) -- /run MacroTranslator:RestoreMacro(46)
 	if type(i) ~= "number" or i < 1 or i > 72 then return end
-	local macro, icon, body, isLocal = GetMacroInfo(i)
-	if not macro then return end
-	local newbody = self:RestoreMacroText(body)
-	if not newbody then return end
+	local name, icon, body = GetMacroInfo(i)
+	if not name then return end
+	--print("   ")
+	--print(">> RestoreMacro:", i, name)
+	local newbody, missing = self:RestoreMacroText(body)
+	if missing == 0 and not newbody then return end
+
 	if InCombatLockdown() then
-		--print("Can't update macro in combat!") -- TODO: queue
-	else
-		--print("updating macro!")
-		icon = gsub(icon, ".+\\", "")
-		self.editing = true
-		EditMacro(i, macro, icon, newbody, isLocal, i > 36)
-		self.editing = nil
+		--print(">> RestoreMacro:", "Queued for end of combat")
+		return self:Queue(i)
 	end
+
+	if missing > 0 then
+		--print(">> RestoreMacro:", "Item name(s) missing, queued for retry")
+		self:Queue(i)
+	end
+
+	icon = gsub(icon, ".+\\", "")
+	self.editing = true
+	EditMacro(i, name, icon, newbody)
+	self.editing = nil
 end
 
 ------------------------------------------------------------------------
@@ -222,13 +288,47 @@ f:RegisterEvent("PLAYER_LOGIN")
 f:RegisterEvent("PLAYER_LOGOUT")
 Addon.EventFrame = f
 
+f:Hide()
+f:SetScript("OnUpdate", function(self, elapsed)
+	self.delay = self.delay - elapsed
+	if self.delay < 0 then
+		self:Hide()
+		if InCombatLockdown() then
+			return self:RegisterEvent("PLAYER_REGEN_ENABLED")
+		end
+		for i in pairs(queue) do
+			--print(">> QUEUED:", i)
+			Addon:RestoreMacro(i)
+			queue[i] = nil -- if it failed again a second time, just let it go, probably an NPC spell or something
+		end
+	end
+end)
+
+function f:PLAYER_REGEN_ENABLED()
+	--print(">> PLAYER_REGEN_ENABLED")
+	self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+	self.delay = 1
+	self:Show()
+end
+
+function Addon:Queue(i)
+	--print(">> Queue:", i)
+	queue[i] = true
+	if InCombatLockdown() then
+		f:RegisterEvent("PLAYER_REGEN_ENABLED")
+	else
+		f.delay = 3
+		f:Show()
+	end
+end
+
 ------------------------------------------------------------------------
 
 local addons = {
 	Clique = function()
 		local AddBinding = Clique.AddBinding
 		function Clique:AddBinding(entry)
-			--print("Clique:AddBinding")
+			--print(">> Clique/AddBinding")
 			if entry.spell then
 				Addon:SaveNameToID(entry.spell)
 			elseif entry.macrotext then
@@ -241,19 +341,19 @@ local addons = {
 
 		local BINDINGS_CHANGED = Clique.BINDINGS_CHANGED
 		function Clique:BINDINGS_CHANGED()
-			--print("Clique:BINDINGS_CHANGED", loading)
+			--print(">> Clique/BINDINGS_CHANGED:", loading)
 			local bindings = Clique.bindings
 			for i = 1, #bindings do
 				local entry = bindings[i]
 				if entry.spell then
 					local name = Addon:TranslateName(entry.spell)
-					--print("spell", entry.spell, "->", name)
+					--print("s">> Clique/BINDINGS_CHANGED:", pell", entry.spell, "->", name)
 					entry.spell = name or entry.spell
 				elseif entry.macrotext then
 					Addon:SaveMacroText(entry.macrotext)
 					local text = Addon:RestoreMacroText(entry.macrotext)
-					--print("macro", entry.macrotext)
-					--print("   ->", text)
+					--print(">> Clique/BINDINGS_CHANGED:", "macro", entry.macrotext)
+					--print(">> Clique/BINDINGS_CHANGED:", "   ->", text)
 					entry.macrotext = text or entry.macrotext
 				end
 			end
@@ -283,7 +383,7 @@ end
 
 function f:PLAYER_LOGIN()
 	local global, char = GetNumMacros()
-	--print("PLAYER_LOGIN", global + char, "macros found")
+	--print(">> PLAYER_LOGIN:", global + char, "macros found")
 	for i = 1, global do
 		Addon:RestoreMacro(i)
 	end
@@ -314,8 +414,9 @@ end
 
 hooksecurefunc("EditMacro", function(i)
 	if f.editing then return end
-	--print("EditMacro", i)
+	--print(">> EditMacro:", i)
 	if type(i) == "string" then
+		--print(">> EditMacro:", "found index", i)
 		i = GetMacroIndexByName(i)
 	end
 	if i > 0 then
@@ -328,7 +429,7 @@ end)
 local MESSAGE_SAVED = "Spell and item names for the current language have been saved."
 local MESSAGE_RESTORED = "Your macros have been updated."
 if GetLocale() == "deDE" then
-	MESSAGE_SAVED = "Zauber- und Gegenstandsnamen der aktuellen Sprache wurden gespiechert."
+	MESSAGE_SAVED = "Die Zauber- und Gegenstandsnamen der aktuellen Sprache wurden gespiechert."
 	MESSAGE_RESTORED = "Eure Makros wurden aktualisiert."
 elseif GetLocale():match("^es") then
 	MESSAGE_SAVED = "Los nombres de hechizos y objetos en el idioma actual han sido guardados."
@@ -339,10 +440,16 @@ SLASH_MACROTRANSLATOR1 = "/macrotrans"
 SlashCmdList.MACROTRANSLATOR = function(cmd)
 	local type, id, name = strmatch(strlower(cmd), "^%s*(%S+)%s*(%d+)%s*(.+)%s*$")
 	if id and name and (type == "spell" or type == "item") then
+		--print(">> SlashCmdList:", type, id, name)
+		MacroTranslatorDB[name] = type..":"..id
+	end
+	local type, id, name = strmatch(strlower(cmd), "^%s*(|h(.-):(%d+):.+|h%s*(%S+)%s*$")
+	if id and name and (type == "spell" or type == "item") then
+		--print(">> SlashCmdList:", "linked", type, id, name)
 		MacroTranslatorDB[name] = type..":"..id
 	end
 	f:PLAYER_LOGOUT()
-	print("|cffffb000"..ADDON..":|r", MESSAGE_SAVED)
+	--print("|cffffb000"..ADDON..":|r", MESSAGE_SAVED)
 	f:PLAYER_LOGIN()
-	print("|cffffb000"..ADDON..":|r", MESSAGE_RESTORED)
+	--print("|cffffb000"..ADDON..":|r", MESSAGE_RESTORED)
 end
