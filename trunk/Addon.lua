@@ -159,10 +159,11 @@ function Addon:SaveMacroText(body)
 				name = gsub(name, "[#/]%S+", "")
 				name = gsub(name, "reset=%S+ ?", "")
 				name = strtrim(name)
-				if strlen(name) > 0 then
+				if strlen(name) > 0 and not strmatch(name, "^[%d%s]+$") then
 					self:SaveNameToID(name)
 				else
-					--print(">> SaveMacroText:", "skipping zero length part")
+					-- ignore /use <invslot> and /use <bag> <slot>
+					--print(">> SaveMacroText:", "skipping zero length or numeric part")
 				end
 			end
 		else
