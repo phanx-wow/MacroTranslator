@@ -87,7 +87,9 @@ function Addon:ScanSpellbook()
 		for i = 1, MAX_NUM_TALENT_TIERS * NUM_TALENT_COLUMNS do
 			GameTooltip:SetTalent(i)
 			local name, _, id = GameTooltip:GetSpell()
-			spellbook[strlower(name)] = GetSpellLink(id)
+			if name and id then
+				spellbook[strlower(name)] = GetSpellLink(id)
+			end
 		end
 		GameTooltip:Hide()
 	else
@@ -96,7 +98,9 @@ function Addon:ScanSpellbook()
 		for i = 1, GetNumTalents() do
 			GameTooltip:SetTalent(i, nil, talentGroup)
 			local name, _, id = GameTooltip:GetSpell()
-			spellbook[strlower(name)] = GetSpellLink(id)
+			if name and id then
+				spellbook[strlower(name)] = GetSpellLink(id)
+			end
 		end
 		GameTooltip:Hide()
 	end
