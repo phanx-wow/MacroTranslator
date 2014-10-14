@@ -84,7 +84,7 @@ function Addon:ScanSpellbook()
 	if isWOD then
 		local talentGroup = GetActiveSpecGroup(false)
 		GameTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-		for i = 1, MAX_NUM_TALENT_TIERS * NUM_TALENT_COLUMNS do
+		for i = 1, NUM_TALENT_COLUMNS * #CLASS_TALENT_LEVELS["DEFAULT"] do
 			GameTooltip:SetTalent(i)
 			local name, _, id = GameTooltip:GetSpell()
 			if name and id then

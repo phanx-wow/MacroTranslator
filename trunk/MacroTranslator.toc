@@ -1,5 +1,5 @@
-## Interface: 50400
-## Version: 5.4.8.2
+## Interface: 60000
+## Version: 6.0.2.wowi:revision
 
 ## Title: MacroTranslator
 ## Notes: Translates the spell and item names in your macros when you switch game languages.
