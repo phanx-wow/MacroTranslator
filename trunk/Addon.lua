@@ -11,8 +11,6 @@ local ADDON, Addon = ...
 MacroTranslatorDB = {}
 MacroTranslator = Addon -- #DEBUG
 
-local isWOD = select(4, GetBuildInfo()) >= 60000
-
 local queue = {}
 
 local commands = {
@@ -81,29 +79,16 @@ function Addon:ScanSpellbook()
 		end
 	end
 
-	if isWOD then
-		local talentGroup = GetActiveSpecGroup(false)
-		GameTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-		for i = 1, NUM_TALENT_COLUMNS * #CLASS_TALENT_LEVELS["DEFAULT"] do
-			GameTooltip:SetTalent(i)
-			local name, _, id = GameTooltip:GetSpell()
-			if name and id then
-				spellbook[strlower(name)] = GetSpellLink(id)
-			end
+	local talentGroup = GetActiveSpecGroup(false)
+	GameTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+	for i = 1, 21 do
+		GameTooltip:SetTalent(i)
+		local name, _, id = GameTooltip:GetSpell()
+		if name and id then
+			spellbook[strlower(name)] = GetSpellLink(id)
 		end
-		GameTooltip:Hide()
-	else
-		local talentGroup = GetActiveSpecGroup(false)
-		GameTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-		for i = 1, GetNumTalents() do
-			GameTooltip:SetTalent(i, nil, talentGroup)
-			local name, _, id = GameTooltip:GetSpell()
-			if name and id then
-				spellbook[strlower(name)] = GetSpellLink(id)
-			end
-		end
-		GameTooltip:Hide()
 	end
+	GameTooltip:Hide()
 
 	--print("Done.")
 end
@@ -177,7 +162,7 @@ function Addon:SaveMacroText(body)
 end
 
 function Addon:SaveMacro(i) -- /run MacroTranslator:SaveMacro(50) /run MacroTranslator:PLAYER_LOGOUT()
-	if type(i) ~= "number" or i < 1 or i > 72 then return end
+	if type(i) ~= "number" or i < 1 or i > (MAX_CHARACTER_MACROS + MAX_ACCOUNT_MACROS) then return end
 	local macro, _, body = GetMacroInfo(i)
 	if not macro then return end
 	--print("   ")
@@ -261,7 +246,7 @@ function Addon:RestoreMacroText(body)
 end
 
 function Addon:RestoreMacro(i) -- /run MacroTranslator:RestoreMacro(46)
-	if type(i) ~= "number" or i < 1 or i > 72 then return end
+	if type(i) ~= "number" or i < 1 or i > (MAX_CHARACTER_MACROS + MAX_ACCOUNT_MACROS) then return end
 	local name, icon, body = GetMacroInfo(i)
 	if not name then return end
 	--print("   ")
@@ -388,12 +373,12 @@ end
 
 function f:PLAYER_LOGIN()
 	local global, char = GetNumMacros()
-	--print(">> PLAYER_LOGIN:", global + char, "macros found")
+	--print(">> PLAYER_LOGIN:", global, "+", char, "macros found")
 	for i = 1, global do
 		Addon:RestoreMacro(i)
 	end
 	for i = 1, char do
-		Addon:RestoreMacro(i + 36)
+		Addon:RestoreMacro(i + MAX_ACCOUNT_MACROS)
 	end
 
 	for addon, func in pairs(addons) do
@@ -413,7 +398,7 @@ function f:PLAYER_LOGOUT()
 		Addon:SaveMacro(i)
 	end
 	for i = 1, char do
-		Addon:SaveMacro(i + 36)
+		Addon:SaveMacro(i + MAX_ACCOUNT_MACROS)
 	end
 end
 
@@ -454,7 +439,7 @@ SlashCmdList.MACROTRANSLATOR = function(cmd)
 		MacroTranslatorDB[name] = type..":"..id
 	end
 	f:PLAYER_LOGOUT()
-	--print("|cffffb000"..ADDON..":|r", MESSAGE_SAVED)
+	print("|cffffb000"..ADDON..":|r", MESSAGE_SAVED)
 	f:PLAYER_LOGIN()
-	--print("|cffffb000"..ADDON..":|r", MESSAGE_RESTORED)
+	print("|cffffb000"..ADDON..":|r", MESSAGE_RESTORED)
 end
