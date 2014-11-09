@@ -1,10 +1,10 @@
 --[[--------------------------------------------------------------------
 	MacroTranslator
 	Translates spell and item names in macros when you switch game languages.
-	Copyright (c) 2014 Phanx. All rights reserved.
-	See the accompanying README and LICENSE files for details.
+	Copyright (c) 2014 Phanx <addons@phanx.net>. All rights reserved.
 	http://www.wowinterface.com/downloads/info22721-MacroTranslator
 	http://www.curse.com/addons/wow/macrotranslator
+	https://github.com/Phanx/MacroTranslator
 ----------------------------------------------------------------------]]
 
 local ADDON, Addon = ...
