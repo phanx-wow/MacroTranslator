@@ -1,7 +1,7 @@
 --[[--------------------------------------------------------------------
 	MacroTranslator
 	Translates spell and item names in macros when you switch game languages.
-	Copyright (c) 2014 Phanx <addons@phanx.net>. All rights reserved.
+	Copyright (c) 2014-2015 Phanx <addons@phanx.net>. All rights reserved.
 	http://www.wowinterface.com/downloads/info22721-MacroTranslator
 	http://www.curse.com/addons/wow/macrotranslator
 	https://github.com/Phanx/MacroTranslator
@@ -312,6 +312,17 @@ function Addon:Queue(i)
 	end
 end
 
+function Addon:RestoreAllMacros()
+	local global, char = GetNumMacros()
+	--print(">> RestoreAllMacros:", global, "+", char, "macros found")
+	for i = 1, global do
+		self:RestoreMacro(i)
+	end
+	for i = 1, char do
+		self:RestoreMacro(i + MAX_ACCOUNT_MACROS)
+	end
+end
+
 ------------------------------------------------------------------------
 
 local addons = {
@@ -372,14 +383,8 @@ function f:ADDON_LOADED(addon)
 end
 
 function f:PLAYER_LOGIN()
-	local global, char = GetNumMacros()
-	--print(">> PLAYER_LOGIN:", global, "+", char, "macros found")
-	for i = 1, global do
-		Addon:RestoreMacro(i)
-	end
-	for i = 1, char do
-		Addon:RestoreMacro(i + MAX_ACCOUNT_MACROS)
-	end
+	--print(">> PLAYER_LOGIN")
+	Addon:RestoreAllMacros()
 
 	for addon, func in pairs(addons) do
 		if IsAddOnLoaded(addon) then
@@ -389,6 +394,18 @@ function f:PLAYER_LOGIN()
 	end
 	if next(addons) then
 		self:RegisterEvent("ADDON_LOADED")
+	end
+
+	self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+end
+
+local spec
+function f:PLAYER_SPECIALIZATION_CHANGED()
+	local newspec = GetSpecialization() or 0
+	if spec and spec ~= newspec then
+		spec = newspec
+		--print(">> PLAYER_SPECIALIZATION_CHANGED:", spec, "=>", newspec)
+		Addon:RestoreAllMacros()
 	end
 end
 

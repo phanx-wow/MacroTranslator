@@ -9,7 +9,7 @@
 
 ## Author: Phanx
 ## X-Email: addons@phanx.net
-## X-Copyright: Copyright (c) 2014 Phanx. All rights reserved.
+## X-Copyright: Copyright (c) 2014-2015 Phanx. All rights reserved.
 ## X-Website: https://github.com/phanx/MacroTranslator
 
 ## SavedVariables: MacroTranslatorDB
