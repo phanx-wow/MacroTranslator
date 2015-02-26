@@ -1,3 +1,7 @@
+### Version 6.1.0.6
+
+* Update for WoW 6.1
+
 ### Version 6.0.3.5
 
 * Improved handling of spells that change names based on specialization or talents
