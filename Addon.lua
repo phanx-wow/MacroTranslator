@@ -264,9 +264,8 @@ function Addon:RestoreMacro(i) -- /run MacroTranslator:RestoreMacro(46)
 		self:Queue(i)
 	end
 
-	icon = gsub(icon, ".+\\", "")
 	self.editing = true
-	EditMacro(i, name, icon, newbody)
+	EditMacro(i, nil, nil, newbody)
 	self.editing = nil
 end
 
